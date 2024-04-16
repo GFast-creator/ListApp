@@ -13,8 +13,6 @@ interface WordDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(vararg words: Word)
 
-
-
     @Update
     suspend fun updateUsers(vararg words: Word)
 

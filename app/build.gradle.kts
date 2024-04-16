@@ -1,8 +1,10 @@
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
-    id("com.google.devtools.ksp")
+    //id("com.google.devtools.ksp")
+    kotlin("kapt")
     id("androidx.room")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -55,15 +57,29 @@ android {
     }
 }
 
+kapt{
+    correctErrorTypes = true
+}
+
 dependencies {
 
     val roomVersion = "2.6.1"
 
     implementation("androidx.room:room-runtime:$roomVersion")
-    annotationProcessor("androidx.room:room-compiler:$roomVersion")
+    //annotationProcessor("androidx.room:room-compiler:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
 
-    ksp("androidx.room:room-compiler:$roomVersion")
+    kapt("androidx.room:room-compiler:$roomVersion")
+
+
+    val hiltVersion = "2.48"
+
+    implementation("com.google.dagger:hilt-android:$hiltVersion")
+    kapt("com.google.dagger:hilt-android-compiler:$hiltVersion")
+    //annotationProcessor("com.google.dagger:hilt-compiler:$hiltVersion")
+
+//    ksp("com.google.dagger:dagger-compiler:$hiltVersion") // Dagger compiler
+//    ksp("com.google.dagger:hilt-compiler:$hiltVersion")   // Hilt compiler
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
