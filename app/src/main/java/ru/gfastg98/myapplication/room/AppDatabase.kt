@@ -1,6 +1,7 @@
 package ru.gfastg98.myapplication.room
 
 import android.content.Context
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -11,8 +12,14 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
-@Database(version = 1, entities = [Word::class]
+@Database(
+    version = 2,
+    entities = [Word::class],
+    autoMigrations = [
+        AutoMigration (from = 1, to = 2)
+    ]
 )
+
 abstract class AppDatabase : RoomDatabase() {
     abstract val wordDao: WordDao
 }

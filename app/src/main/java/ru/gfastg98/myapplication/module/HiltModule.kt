@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
 import dagger.Module
@@ -36,8 +37,9 @@ object HiltModule {
 
     @Singleton
     @Provides
-    fun vibratorManager(app: Application): VibratorManager {
-        return app.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+    fun vibratorManager(app: Application): Vibrator {
+
+        return (app.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager).defaultVibrator
     }
 
     @Singleton
