@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -243,13 +245,12 @@ class MainActivity : ComponentActivity() {
                             contentDescription = stringResource(R.string.add)
                         )
                     }
-
-                    FlowRow(
-                        modifier = Modifier
+                    val scrollState = rememberScrollState()
+                    FlowRow(modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f),
-                        horizontalArrangement = Arrangement.End
-                    ) {
+                            .weight(1f)
+                            .verticalScroll(scrollState),
+                        horizontalArrangement = Arrangement.End) {
                         //items(words.value.size, key = { it }) { index ->
                         words.value.forEachIndexed { index, word ->
                             WordCard(
