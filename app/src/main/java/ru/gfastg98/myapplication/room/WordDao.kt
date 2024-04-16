@@ -19,7 +19,7 @@ interface WordDao {
     @Query("SELECT * FROM words ORDER BY word ASC")
     fun getAll(): Flow<List<Word>>
 
-    @Query("SELECT * FROM words WHERE isSelected = true ORDER BY word ASC")
+    @Query("SELECT * FROM words WHERE isSelected = true")
     fun getSelected(): Flow<List<Word>>
 
     @Delete
