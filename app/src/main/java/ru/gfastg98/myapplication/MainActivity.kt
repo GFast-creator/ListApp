@@ -2,24 +2,24 @@ package ru.gfastg98.myapplication
 
 import android.annotation.SuppressLint
 import android.app.NotificationManager
-import android.content.Context
 import android.os.Bundle
-import android.os.CombinedVibration
 import android.os.VibrationEffect
-import android.os.VibratorManager
+import android.os.Vibrator
 import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -38,25 +38,22 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationCompat
-import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import ru.gfastg98.myapplication.module.CONSTANTS.NOTIFICATION_ID
 import ru.gfastg98.myapplication.room.Word
 import ru.gfastg98.myapplication.room.WordViewModel
@@ -69,73 +66,80 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    private val viewModel : WordViewModel by viewModels()
+    private val viewModel: WordViewModel by viewModels()
 
-    @Inject lateinit var notificationManager: NotificationManager
-    @Inject lateinit var vibrationManager: VibratorManager
-    @Inject lateinit var notification : NotificationCompat.Builder
+    @Inject
+    lateinit var notificationManager: NotificationManager
+
+    @Inject
+    lateinit var vibrator: Vibrator
+
+    @Inject
+    lateinit var notification: NotificationCompat.Builder
+
+    private lateinit var onBackPressedCallback: OnBackPressedCallback
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContent {
             MyApplicationTheme {
-                Extracted()
+                MainView()
             }
         }
     }
-
 
     @Preview(showBackground = true)
     @Composable
     fun WordCardPreview() {
-        val context = LocalContext.current
         MyApplicationTheme {
-            WordCard(Word(word = context.resourceString(R.string.hello_world)),
-                selected = true,
-                selectedForDelete = false,
-                onClick = {},
-                onLongClick = {})
+            WordCard(
+                Modifier,
+                Word(word = stringResource(R.string.hello_world)),
+                selected = false,
+                selectedForDelete = true
+            )
         }
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
+    @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class,
+        ExperimentalFoundationApi::class
+    )
     @SuppressLint("CoroutineCreationDuringComposition")
     @Composable
-    private fun Extracted(
+    private fun MainView(
     ) {
         var text by rememberSaveable { mutableStateOf("") }
 
-        var words by remember {
-            mutableStateOf(listOf<Word>())
+        val words = viewModel.words.collectAsState(initial = emptyList())
+        val selectedWords =
+            viewModel.selectedWords.collectAsState(initial = emptyList())//words.value.filter { word -> word.isSelected }
+        val isDialog = viewModel.dialogStateObj.isDialogStateFlow.collectAsState()
+        val selectedForDelete = viewModel.deleteWordsObj.stateFlowInstant.collectAsState()
+
+        updateFoundElements(selectedWords.value, text)
+
+
+        onBackPressedCallback = object : OnBackPressedCallback(false) {
+            override fun handleOnBackPressed() {
+                viewModel.deleteWordsObj.update(emptyList())
+                isEnabled = false
+            }
         }
 
-        var selectedWords by remember {
-            mutableStateOf(listOf<Word>())
-        }
+        onBackPressedDispatcher.addCallback(LocalLifecycleOwner.current, onBackPressedCallback)
 
-        var isDialog by remember {
-            mutableStateOf(false)
-        }
-
-        var selectedForDelete by remember {
-            mutableStateOf(listOf<Word>())
-        }
-
-        viewModel.words.onEach {
-            words = it
-        }.launchIn(lifecycleScope)
-
-        if (isDialog) {
+        //диалог добавления слова
+        if (isDialog.value) {
             var newWord by rememberSaveable {
                 mutableStateOf("")
             }
 
-            AlertDialog(onDismissRequest = { isDialog = false },
+            AlertDialog(onDismissRequest = { viewModel.dialogStateObj.update(false) },
                 title = { Text(stringResource(R.string.adding_element)) },
                 text = {
                     Column {
-                        if (words.any { p -> p.word == newWord }) {
+                        if (words.value.any { p -> p.word == newWord }) {
                             Text(stringResource(R.string.word_exist), color = Color.Red)
                         }
                         TextField(
@@ -152,9 +156,9 @@ class MainActivity : ComponentActivity() {
                 },
                 confirmButton = {
                     Button(onClick = {
-                        if (newWord.isNotBlank() && words.none { p -> p.word == newWord }) {
+                        if (newWord.isNotBlank() && words.value.none { p -> p.word == newWord }) {
                             viewModel.save(Word(word = newWord))
-                            isDialog = false
+                            viewModel.dialogStateObj.update(false)
                         }
                     }) {
                         Text(text = stringResource(R.string.ok))
@@ -162,7 +166,7 @@ class MainActivity : ComponentActivity() {
                 },
                 dismissButton = {
                     Button(onClick = {
-                        isDialog = false
+                        viewModel.dialogStateObj.update(false)
                     }) {
                         Text(text = stringResource(R.string.cancel))
                     }
@@ -175,34 +179,34 @@ class MainActivity : ComponentActivity() {
                 TopAppBar(
                     title = {
                         Text(
-                            text = resourceString(R.string.app_name)
+                            text = stringResource(R.string.app_name)
                         )
                     },
                     actions = {
-                        if (selectedForDelete.isNotEmpty()) {
+                        if (selectedForDelete.value.isNotEmpty()) {
                             IconButton(onClick = {
-                                selectedForDelete = emptyList()
+                                viewModel.deleteWordsObj.update(emptyList())
                             }) {
                                 Icon(
                                     imageVector = Icons.Default.Close,
                                     contentDescription = stringResource(id = R.string.cancel)
                                 )
                             }
+
                             IconButton(onClick = {
-                                selectedForDelete = words
+                                viewModel.deleteWordsObj.update(words.value)
                             }) {
                                 Icon(
-                                    ImageVector
+                                    imageVector = ImageVector
                                         .vectorResource(id = R.drawable.baseline_select_all_24),
                                     contentDescription = stringResource(id = R.string.select_all),
                                 )
                             }
                             IconButton(onClick = {
-                                viewModel.delete(*selectedForDelete.toTypedArray())
-                                selectedWords =
-                                    selectedWords.filter { w -> w !in selectedForDelete }
-                                selectedForDelete = emptyList()
-                                updateFoundation(selectedWords, text)
+                                viewModel.delete(*selectedForDelete.value.toTypedArray())
+
+                                viewModel.deleteWordsObj.update(emptyList())
+                                //updateFoundElements(selectedWords.value, text)
                             }) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
@@ -225,115 +229,80 @@ class MainActivity : ComponentActivity() {
                         value = text,
                         onValueChange = { s ->
                             text = s
-                            updateFoundation(selectedWords, text)
+                            //updateFoundElements(selectedWords.value, text)
                         },
                         label = { Text(stringResource(R.string.search)) })
 
-                    LazyColumn(
+                    Button(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 4.dp, end = 4.dp, top = 4.dp),
+                        onClick = { viewModel.dialogStateObj.update(true) }) {
+                        Icon(
+                            imageVector = Icons.Filled.Add,
+                            contentDescription = stringResource(R.string.add)
+                        )
+                    }
+
+                    FlowRow(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f),
-                        horizontalAlignment = Alignment.End
+                        horizontalArrangement = Arrangement.End
                     ) {
-
-                        item {
-                            Row {
-                                IconButton(onClick = { isDialog = true }) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Add,
-                                        contentDescription = stringResource(R.string.add)
-                                    )
-                                }
-
-                                /*Button(
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = ItemRed
-                                    ),
-                                    onClick = {
-                                        selectedWords = listOf()
-                                        viewModel.deleteAll()
-                                        updateFoundation(selectedWords, text)
-                                    }) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Delete,
-                                        contentDescription = stringResource(R.string.delete_all)
-                                    )
-                                    Text(stringResource(id = R.string.delete_all))
-                                }*/
-                            }
-                        }
-
-                        items(words.size, key = { it }) { index ->
-
+                        //items(words.value.size, key = { it }) { index ->
+                        words.value.forEachIndexed { index, word ->
                             WordCard(
-                                words[index],
-                                selected = words[index] in selectedWords,
-                                selectedForDelete = words[index] in selectedForDelete,
-                                onClick = {
-                                    if (selectedForDelete.isNotEmpty()) {
+                                modifier = Modifier
+                                    .padding(top = 8.dp, start = 4.dp, end = 4.dp)
+                                    .wrapContentSize()
+                                    .combinedClickable(
+                                        onClick = {
+                                            if (selectedForDelete.value.isNotEmpty()) {
+                                                if (word !in selectedForDelete.value)
+                                                    viewModel.deleteWordsObj += word
+                                                else
+                                                    viewModel.deleteWordsObj -= word
 
-                                        if (words[index] !in selectedForDelete)
-                                            selectedForDelete += words[index]
-                                        else
-                                            selectedForDelete -= words[index]
+                                                vibrate()
+                                            } else {
+                                                viewModel.updateWordState(
+                                                    word = word,
+                                                    newState = word !in selectedWords.value
+                                                )
 
-                                        vibrate(VibrationEffect.EFFECT_CLICK)
-
-
-                                    } else {
-
-                                        if (words[index] !in selectedWords) selectedWords += words[index]
-                                        else selectedWords -= words[index]
-
-                                        updateFoundation(selectedWords, text)
-                                    }
-                                },
-                                onLongClick = {
-                                    if (selectedForDelete.isEmpty()) {
-                                        selectedForDelete += words[index]
-                                        vibrate(VibrationEffect.EFFECT_HEAVY_CLICK)
-                                    }
-                                })
+                                                //updateFoundElements(selectedWords.value, text)
+                                            }
+                                        },
+                                        onLongClick = {
+                                            if (selectedForDelete.value.isEmpty()) {
+                                                viewModel.deleteWordsObj += word
+                                                onBackPressedCallback.isEnabled = true
+                                                vibrate()
+                                            }
+                                        }
+                                    ),
+                                wordObj = word,
+                                selected = word in selectedWords.value,
+                                selectedForDelete = word in selectedForDelete.value)
                         }
-
                     }
                 }
             }
         }
     }
 
-    private fun vibrate(effectId: Int) {
-        vibrationManager.vibrate(
-            CombinedVibration.createParallel(
-                VibrationEffect.createPredefined(
-                    effectId
-                )
-            )
-        )
-    }
-
     //Карточка для слова
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
     private fun WordCard(
+        modifier: Modifier,
         wordObj: Word,
         selected: Boolean,
-        selectedForDelete: Boolean,
-        onClick: () -> Unit,
-        onLongClick: () -> Unit
+        selectedForDelete: Boolean
     ) {
         Card(
-            modifier = Modifier
-                .padding(top = 8.dp, start = 8.dp, end = 8.dp)
-                .wrapContentSize()
-                .selectable(
-                    selected = selected,
-                    onClick = onClick
-                )
-                .combinedClickable(
-                    onClick = onClick,
-                    onLongClick = onLongClick
-                ),
+            modifier = modifier,
             colors = CardDefaults.run {
                 if (selectedForDelete) {
                     cardColors(
@@ -355,19 +324,17 @@ class MainActivity : ComponentActivity() {
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                         .align(Alignment.CenterVertically)
                 )
-                /*Button(
-                    onClick = onClickDelete,
-                    Modifier
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                        .align(Alignment.CenterVertically)
-                ) {
-                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Кнопка удалить")
-                }*/
             }
         }
     }
 
-    private fun updateFoundation(
+    //вибрация
+    private fun vibrate() {
+        vibrator.vibrate(VibrationEffect.createOneShot(50, 255))
+    }
+
+    //Обновление найденных элементов
+    private fun updateFoundElements(
         selectedWords: List<Word>,
         text: String
     ) {
@@ -378,17 +345,14 @@ class MainActivity : ComponentActivity() {
 
         notification.setContentText(
             getString(
-                R.string.founded_elements)
+                R.string.founded_elements
+            )
                     + founded.joinToString(separator = ",\n") {
-                        it.word
-                    }
+                it.word
+            }
         )
 
         notificationManager.notify(NOTIFICATION_ID, notification.build())
     }
 
-}
-
-fun Context.resourceString(res: Int): String {
-    return this.resources.getString(res)
 }

@@ -19,10 +19,18 @@ interface WordDao {
     @Query("SELECT * FROM words ORDER BY word ASC")
     fun getAll(): Flow<List<Word>>
 
+    @Query("SELECT * FROM words WHERE isSelected = true")
+    fun getSelected(): Flow<List<Word>>
+
     @Delete
     suspend fun delete(vararg word: Word)
 
     @Query("DELETE FROM words")
     suspend fun deleteAll()
+
+//    @Query("UPDATE words SET isSelected = :newState WHERE id = :wordId")
+//    suspend fun updateWordState(wordId: Word, newState: Booleam)
+    @Update
+    suspend fun update(word:Word)
 
 }

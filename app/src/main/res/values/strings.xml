@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">My Application</string>
+    <string name="app_name">ListApp</string>
     <string name="hello_world">Hello world!1!!11!</string>
     <string name="delete">Удалить</string>
     <string name="adding_element">Добавление элемента</string>
