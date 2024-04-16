@@ -1,7 +1,6 @@
 package ru.gfastg98.myapplication
 
 import android.annotation.SuppressLint
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Bundle
@@ -54,66 +53,30 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationCompat
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import ru.gfastg98.myapplication.room.AppDatabase
+import ru.gfastg98.myapplication.module.CONSTANTS.NOTIFICATION_ID
 import ru.gfastg98.myapplication.room.Word
 import ru.gfastg98.myapplication.room.WordViewModel
 import ru.gfastg98.myapplication.ui.theme.ItemGreen
 import ru.gfastg98.myapplication.ui.theme.ItemRed
 import ru.gfastg98.myapplication.ui.theme.MyApplicationTheme
+import javax.inject.Inject
 
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    companion object {
-        const val NOTIFICATION_ID = 1990
-        const val CHANNEL_ID = "1991"
-        const val CHANNEL_NAME = "list_app"
-    }
+    private val viewModel : WordViewModel by viewModels()
 
-    lateinit var room: AppDatabase
-
-    private val viewModel by viewModels<WordViewModel>(
-        factoryProducer = {
-            object : ViewModelProvider.Factory {
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return WordViewModel(room.wordDao) as T
-                }
-            }
-        }
-    )
-
-    private lateinit var notificationManager: NotificationManager
-
-    private lateinit var vibrationManager: VibratorManager
-
-    private var notification = NotificationCompat.Builder(this, CHANNEL_ID)
-        .setContentTitle("List_app")
-        .setSmallIcon(R.drawable.baseline_find_in_page_24)
-        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+    @Inject lateinit var notificationManager: NotificationManager
+    @Inject lateinit var vibrationManager: VibratorManager
+    @Inject lateinit var notification : NotificationCompat.Builder
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        room = AppDatabase.create(this)
-
-        notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        vibrationManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            CHANNEL_NAME,
-            NotificationManager.IMPORTANCE_DEFAULT
-        ).apply {
-            description = "channel for app"
-        }
-
-        notificationManager.createNotificationChannel(channel)
 
         setContent {
             MyApplicationTheme {
