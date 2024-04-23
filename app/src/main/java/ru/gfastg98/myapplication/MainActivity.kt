@@ -1,6 +1,5 @@
 package ru.gfastg98.myapplication
 
-import android.annotation.SuppressLint
 import android.app.NotificationManager
 import android.os.Bundle
 import android.os.VibrationEffect
@@ -107,7 +106,6 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class,
         ExperimentalFoundationApi::class
     )
-    @SuppressLint("CoroutineCreationDuringComposition")
     @Composable
     private fun MainView(
     ) {
