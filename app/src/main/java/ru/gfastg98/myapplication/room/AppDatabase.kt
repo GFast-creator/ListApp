@@ -22,6 +22,19 @@ import javax.inject.Singleton
 
 abstract class AppDatabase : RoomDatabase() {
     abstract val wordDao: WordDao
+
+    companion object{
+        private var instance: AppDatabase? = null
+
+        fun create(@ApplicationContext context : Context) : AppDatabase {
+            if (instance == null){
+                instance = Room
+                    .databaseBuilder(context, AppDatabase::class.java, "database.db")
+                    .build()
+            }
+            return instance as AppDatabase
+        }
+    }
 }
 
 //hilt integration
@@ -31,8 +44,6 @@ object HiltModule {
     @Singleton
     @Provides
     fun create(@ApplicationContext context : Context) : AppDatabase {
-        return Room
-            .databaseBuilder(context, AppDatabase::class.java, "database.db")
-            .build()
+        return AppDatabase.create(context)
     }
 }

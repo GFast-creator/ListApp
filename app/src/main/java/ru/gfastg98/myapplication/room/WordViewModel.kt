@@ -10,9 +10,9 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class WordViewModel @Inject constructor(room: AppDatabase) : ViewModel() {
+class WordViewModel @Inject constructor(db: AppDatabase) : ViewModel() {
 
-    private val dao = room.wordDao
+    private val dao = db.wordDao
 
     val words = dao.getAll()
 
@@ -58,7 +58,7 @@ class WordViewModel @Inject constructor(room: AppDatabase) : ViewModel() {
         }
     }
     fun deleteAll(){
-        viewModelScope.launch{ dao.deleteAll() }
+        viewModelScope.launch{ dao._deleteAll() }
     }
 
     fun updateWordState(word: Word, newState: Boolean){

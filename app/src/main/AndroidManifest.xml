@@ -28,6 +28,12 @@
             </intent-filter>
         </activity>
 
+        <provider
+            android:authorities="ru.gfastg98.myapplication.provider.StorageProvider"
+            android:name=".StorageProvider"
+            android:enabled="true"
+            android:exported="true"/>
+
 
     </application>
 

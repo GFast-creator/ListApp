@@ -13,6 +13,9 @@ interface WordDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(vararg words: Word)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insert(words: Word) : Long
+
     @Update
     suspend fun updateUsers(vararg words: Word)
 
@@ -26,7 +29,10 @@ interface WordDao {
     suspend fun delete(vararg word: Word)
 
     @Query("DELETE FROM words")
-    suspend fun deleteAll()
+    suspend fun _deleteAll()
+
+    @Query("DELETE FROM words")
+    fun deleteAll() : Int
 
 //    @Query("UPDATE words SET isSelected = :newState WHERE id = :wordId")
 //    suspend fun updateWordState(wordId: Word, newState: Booleam)

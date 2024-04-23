@@ -69,14 +69,9 @@ class MainActivity : ComponentActivity() {
 
     private val viewModel: WordViewModel by viewModels()
 
-    @Inject
-    lateinit var notificationManager: NotificationManager
-
-    @Inject
-    lateinit var vibrator: Vibrator
-
-    @Inject
-    lateinit var notification: NotificationCompat.Builder
+    @Inject lateinit var notificationManager: NotificationManager
+    @Inject lateinit var vibrator: Vibrator
+    @Inject lateinit var notification: NotificationCompat.Builder
 
     private lateinit var onBackPressedCallback: OnBackPressedCallback
 
@@ -111,13 +106,12 @@ class MainActivity : ComponentActivity() {
     ) {
         var text by rememberSaveable { mutableStateOf("") }
 
-        val words = viewModel.words.collectAsState(initial = emptyList())
-        val selectedWords =
-            viewModel.selectedWords.collectAsState(initial = emptyList())//words.value.filter { word -> word.isSelected }
-        val isDialog = viewModel.dialogStateObj.isDialogStateFlow.collectAsState()
-        val selectedForDelete = viewModel.deleteWordsObj.stateFlowInstant.collectAsState()
+        val words by viewModel.words.collectAsState(initial = emptyList())
+        val selectedWords by viewModel.selectedWords.collectAsState(initial = emptyList())
+        val isDialog by viewModel.dialogStateObj.isDialogStateFlow.collectAsState()
+        val selectedForDelete by viewModel.deleteWordsObj.stateFlowInstant.collectAsState()
 
-        updateFoundElements(selectedWords.value, text)
+        updateFoundElements(selectedWords, text)
 
 
         onBackPressedCallback = object : OnBackPressedCallback(false) {
@@ -130,7 +124,7 @@ class MainActivity : ComponentActivity() {
         onBackPressedDispatcher.addCallback(LocalLifecycleOwner.current, onBackPressedCallback)
 
         //диалог добавления слова
-        if (isDialog.value) {
+        if (isDialog) {
             var newWord by rememberSaveable {
                 mutableStateOf("")
             }
@@ -139,7 +133,7 @@ class MainActivity : ComponentActivity() {
                 title = { Text(stringResource(R.string.adding_element)) },
                 text = {
                     Column {
-                        if (words.value.any { p -> p.word == newWord }) {
+                        if (words.any { p -> p.word == newWord }) {
                             Text(stringResource(R.string.word_exist), color = Color.Red)
                         }
                         TextField(
@@ -156,7 +150,7 @@ class MainActivity : ComponentActivity() {
                 },
                 confirmButton = {
                     Button(onClick = {
-                        if (newWord.isNotBlank() && words.value.none { p -> p.word == newWord }) {
+                        if (newWord.isNotBlank() && words.none { p -> p.word == newWord }) {
                             viewModel.save(Word(word = newWord))
                             viewModel.dialogStateObj.update(false)
                         }
@@ -183,7 +177,7 @@ class MainActivity : ComponentActivity() {
                         )
                     },
                     actions = {
-                        if (selectedForDelete.value.isNotEmpty()) {
+                        if (selectedForDelete.isNotEmpty()) {
                             IconButton(onClick = {
                                 viewModel.deleteWordsObj.update(emptyList())
                             }) {
@@ -194,7 +188,7 @@ class MainActivity : ComponentActivity() {
                             }
 
                             IconButton(onClick = {
-                                viewModel.deleteWordsObj.update(words.value)
+                                viewModel.deleteWordsObj.update(words)
                             }) {
                                 Icon(
                                     imageVector = ImageVector
@@ -203,8 +197,7 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             IconButton(onClick = {
-                                viewModel.delete(*selectedForDelete.value.toTypedArray())
-
+                                viewModel.delete(*selectedForDelete.toTypedArray())
                                 viewModel.deleteWordsObj.update(emptyList())
                                 //updateFoundElements(selectedWords.value, text)
                             }) {
@@ -250,15 +243,15 @@ class MainActivity : ComponentActivity() {
                             .verticalScroll(scrollState),
                         horizontalArrangement = Arrangement.End) {
                         //items(words.value.size, key = { it }) { index ->
-                        words.value.forEachIndexed { index, word ->
+                        words.forEachIndexed { index, word ->
                             WordCard(
                                 modifier = Modifier
                                     .padding(top = 8.dp, start = 4.dp, end = 4.dp)
                                     .wrapContentSize()
                                     .combinedClickable(
                                         onClick = {
-                                            if (selectedForDelete.value.isNotEmpty()) {
-                                                if (word !in selectedForDelete.value)
+                                            if (selectedForDelete.isNotEmpty()) {
+                                                if (word !in selectedForDelete)
                                                     viewModel.deleteWordsObj += word
                                                 else
                                                     viewModel.deleteWordsObj -= word
@@ -267,14 +260,14 @@ class MainActivity : ComponentActivity() {
                                             } else {
                                                 viewModel.updateWordState(
                                                     word = word,
-                                                    newState = word !in selectedWords.value
+                                                    newState = word !in selectedWords
                                                 )
 
                                                 //updateFoundElements(selectedWords.value, text)
                                             }
                                         },
                                         onLongClick = {
-                                            if (selectedForDelete.value.isEmpty()) {
+                                            if (selectedForDelete.isEmpty()) {
                                                 viewModel.deleteWordsObj += word
                                                 onBackPressedCallback.isEnabled = true
                                                 vibrate()
@@ -282,8 +275,8 @@ class MainActivity : ComponentActivity() {
                                         }
                                     ),
                                 wordObj = word,
-                                selected = word in selectedWords.value,
-                                selectedForDelete = word in selectedForDelete.value)
+                                selected = word in selectedWords,
+                                selectedForDelete = word in selectedForDelete)
                         }
                     }
                 }
