@@ -25,7 +25,6 @@ object CONSTANTS {
 @Module
 @InstallIn(SingletonComponent::class)
 object HiltModule {
-
     @Singleton
     @Provides
     fun notificationBuilder(@ApplicationContext context: Context): NotificationCompat.Builder {

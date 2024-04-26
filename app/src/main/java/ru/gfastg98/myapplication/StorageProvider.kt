@@ -6,16 +6,13 @@ import android.content.ContentValues
 import android.content.UriMatcher
 import android.database.Cursor
 import android.net.Uri
-import kotlinx.coroutines.InternalCoroutinesApi
 import ru.gfastg98.myapplication.room.AppDatabase
 import ru.gfastg98.myapplication.room.Word
 
 
 class StorageProvider : ContentProvider() {
 
-    //@Inject lateinit var db : AppDatabase
-
-    private var db : AppDatabase? = context?.let { AppDatabase.create(it) }
+    private var db : AppDatabase? = null
 
     private val sUriMatcher = UriMatcher(UriMatcher.NO_MATCH)
 
@@ -34,8 +31,6 @@ class StorageProvider : ContentProvider() {
     }
 
     override fun onCreate(): Boolean {
-        //_db = AppDatabase.create(context!!)
-
         db = AppDatabase.create(context!!)
         return true
     }
@@ -53,7 +48,6 @@ class StorageProvider : ContentProvider() {
             WORD -> {
                 db?.query("SELECT ${projection?.joinToString()?:"*"} FROM words ORDER BY word", emptyArray())
             }
-
             WORD_ID  -> {
                 val id = ContentUris.parseId(uri)
                 db?.query("SELECT ${projection?.toString()?:"*"} FROM words WHERE id = $id ORDER BY word", emptyArray())
@@ -74,7 +68,6 @@ class StorageProvider : ContentProvider() {
         }
     }
 
-    @OptIn(InternalCoroutinesApi::class)
     override fun insert(uri: Uri, values: ContentValues?): Uri {
         return when (sUriMatcher.match(uri)){
             WORD->{
@@ -99,13 +92,6 @@ class StorageProvider : ContentProvider() {
 
     override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?): Int {
         TODO("Not yet implemented")
-        /*return when (sUriMatcher.match(uri)){
-            WORD->{
-                db?.wordDao?.deleteAll()?:0
-            }
-            WORD_ID-> throw IllegalArgumentException("Invalid URI, cannot insert with ID: $uri")
-            else -> throw IllegalArgumentException("Invalid URI: $uri")
-        }*/
     }
 
     override fun update(

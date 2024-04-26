@@ -26,7 +26,7 @@ abstract class AppDatabase : RoomDatabase() {
     companion object{
         private var instance: AppDatabase? = null
 
-        fun create(@ApplicationContext context : Context) : AppDatabase {
+        fun create(context : Context) : AppDatabase {
             if (instance == null){
                 instance = Room
                     .databaseBuilder(context, AppDatabase::class.java, "database.db")
